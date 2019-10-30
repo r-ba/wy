@@ -26,4 +26,11 @@
   ;; run setup at start
   (start $setup)
 
+  (func $addModulo (param $x i32) (param $y i32) (param $n i32) (result i32)
+    (i32.rem_u
+      (i32.add (local.get $x) (local.get $y))
+      (local.get $n)
+    )
+  )
+
 )
