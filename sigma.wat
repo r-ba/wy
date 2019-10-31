@@ -125,4 +125,26 @@
     (i32.store8 (i32.add (local.get $address) (i32.const 3)) (local.get $a))
   )
 
+  ;; update canvas data
+  (func $updateCanvas (param $modulo i32)
+    (local $i i32)
+    (local $pixelIndex i32)
+    (set_local $i (i32.const 0))
+    (set_local $pixelIndex (i32.const 64000))
+    (loop
+      (call $setPixel
+        (i32.load8_u (local.get $i))
+        (local.get $pixelIndex))
+      (set_local $i (i32.add (local.get $i) (i32.const 1)))
+      (set_local $pixelIndex (i32.add (local.get $pixelIndex) (i32.const 4)))
+      (br_if 0
+        (i32.lt_u (local.get $i) (i32.const 63999)))
+    )
+  )
+
+  (func (export "update") (param $modulo i32)
+    (call $updateSystem (local.get $modulo))
+    (call $updateCanvas (local.get $modulo))
+  )
+
 )
