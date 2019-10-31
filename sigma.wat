@@ -34,6 +34,7 @@
     )
   )
 
+  ;; update individual row in the system
   (func $updateRow (param $row i32) (param $modulo i32)
 
     (local $i i32)
@@ -73,7 +74,21 @@
       (br_if 0
         (i32.lt_u (local.get $i) (i32.const 319)))
     )
+  )
 
+  ;; update state of dynamical system
+  (func $updateSystem (param $modulo i32)
+
+    (local $row i32)
+    (set_local $row (i32.const 0))
+
+    (loop
+      (set_local $row (i32.add (local.get $row) (i32.const 1)))
+      (call $updateRow (local.get $row) (local.get $modulo))
+      (br_if 0
+        (i32.lt_u (local.get $row) (i32.const 199))
+      )
+    )
   )
 
 )
