@@ -100,4 +100,29 @@
     (i32.load8_u offset=320000 (local.get $address))
   )
 
+  ;; convert value to rgba, and store at address
+  (func $setPixel (param $value i32) (param $address i32)
+    (local $r i32)
+    (local $g i32)
+    (local $b i32)
+    (local $a i32)
+
+    ;; load palette colour based on value
+    (set_local $r (call $getColour
+      (local.get $value)))
+    (set_local $g (call $getColour
+      (i32.add (local.get $value) (i32.const 1))))
+    (set_local $b (call $getColour
+      (i32.add (local.get $value) (i32.const 1))))
+
+    ;; fixed opacity
+    (set_local $a (i32.const 255))
+
+    ;; store colour at specified address
+    (i32.store8 (local.get $address) (local.get $r))
+    (i32.store8 (i32.add (local.get $address) (i32.const 1)) (local.get $g))
+    (i32.store8 (i32.add (local.get $address) (i32.const 2)) (local.get $b))
+    (i32.store8 (i32.add (local.get $address) (i32.const 3)) (local.get $a))
+  )
+
 )
