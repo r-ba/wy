@@ -1,11 +1,15 @@
 (module
 
-  ;; 1 page * 64Kb per page
+  ;; 6 page * 64Kb per page
   ;; CANVAS_HEIGHT = 200
   ;; CANVAS_WIDTH = 320
   ;; CANVAS_HEIGHT * CANVAS_WIDTH = 64000
 
-  (memory (export "mem") 1)
+  ;; [0,64000)        -> state of system, 1 byte per value
+  ;; [64000, 320000)  -> canvas data, 4 bytes per pixel
+  ;; [320000, 384000) -> palette data, rgba values
+
+  (memory (export "mem") 6)
 
   ;; seed value to dynamical system
   (func $setup
@@ -59,7 +63,7 @@
       ;; memory[rowIndex+1] = memory[rowIndex] + memory[prevRowIndex]
       (i32.store8
         (i32.add (local.get $rowIndex) (i32.const 1))
-        (call $addModulo
+        (call $moduloSum
           (i32.load8_u (local.get $rowIndex))
           (i32.load8_u (local.get $prevRowIndex))
           (local.get $modulo))
@@ -89,6 +93,11 @@
         (i32.lt_u (local.get $row) (i32.const 199))
       )
     )
+  )
+
+  ;; lookup palette value
+  (func $getColour (param $address i32) (result i32)
+    (i32.load8_u offset=320000 (local.get $address))
   )
 
 )
