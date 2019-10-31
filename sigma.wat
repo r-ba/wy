@@ -26,11 +26,54 @@
   ;; run setup at start
   (start $setup)
 
-  (func $addModulo (param $x i32) (param $y i32) (param $n i32) (result i32)
+  ;; (x,y,n) -> x+y mod n
+  (func $moduloSum (param $x i32) (param $y i32) (param $n i32) (result i32)
     (i32.rem_u
       (i32.add (local.get $x) (local.get $y))
       (local.get $n)
     )
+  )
+
+  (func $updateRow (param $row i32) (param $modulo i32)
+
+    (local $i i32)
+    (local $rowIndex i32)
+    (local $prevRowIndex i32)
+    (set_local $i (i32.const 0))
+    (set_local $rowIndex
+      (i32.mul (local.get $row) (i32.const 320)))
+    (set_local $prevRowIndex
+      (i32.add
+        (i32.sub (local.get $rowIndex) (i32.const 320))
+        (i32.const 1)
+      )
+    )
+
+    (i32.store8
+      (local.get $rowIndex)
+      (i32.load8_u (i32.sub (local.get $prevRowIndex) (i32.const 1)))
+    )
+
+    (loop
+      ;; memory[rowIndex+1] = memory[rowIndex] + memory[prevRowIndex]
+      (i32.store8
+        (i32.add (local.get $rowIndex) (i32.const 1))
+        (call $addModulo
+          (i32.load8_u (local.get $rowIndex))
+          (i32.load8_u (local.get $prevRowIndex))
+          (local.get $modulo))
+      )
+
+      ;; increment indices
+      (set_local $i (i32.add (local.get $i) (i32.const 1)))
+      (set_local $rowIndex (i32.add (local.get $rowIndex) (i32.const 1)))
+      (set_local $prevRowIndex (i32.add (local.get $prevRowIndex) (i32.const 1)))
+
+      ;; loop if i < 320
+      (br_if 0
+        (i32.lt_u (local.get $i) (i32.const 319)))
+    )
+
   )
 
 )
