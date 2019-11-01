@@ -3,11 +3,39 @@
 	<head>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+		<link rel="stylesheet" href="assets/styles.css">
 	</head>
 	<body>
+		<div id="option-panel">
+			<div class="card">
+				<ul class="list-group list-group-flush">
+					<li class="list-group-item">
+						<br>
+						<div class="input-group input-group-sm mb-3">
+							<div class="input-group-prepend">
+								<span class="input-group-text" id="mod">Mod</span>
+							</div>
+							<div class="input-group-append" id="button-addon">
+								<button class="btn btn-outline-secondary" type="button" id="mod-decrement">-</button>
+								<button class="btn btn-outline-secondary" type="button" id="mod-increment">+</button>
+							</div>
+							<input type="text" class="form-control" value=3 aria-label="mod" aria-describedby="mod" id="mod-input">
+						</div>
+					</li>
+				</ul>
+				<div class="card-body">
+					<h5 class="card-title">Parameters</h5>
+				</div>
+			</div>
+		</div>
+		<div id="option-toggle">
+			<img src="assets/img/hide.png" id="option-toggle-img"/>
+		</div>
     <canvas width="320" height="200"></canvas>
 	</body>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.5.4/randomColor.min.js"></script>
-  <script type="text/javascript" src="index.js"></script>
+	<script type="text/javascript" src="assets/sigma.wasm.js"></script>
+	<script type="text/javascript" src="assets/index.js"></script>
 </body>
 </html>
