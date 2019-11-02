@@ -1,37 +1,63 @@
-// insantiate wasm module
-let data = new Uint8Array(sigma);
+class Canvas {
+  constructor(properties) {
+    this.width = properties.width;
+    this.height = properties.height;
+    this.palleteSize = properties.numColours;
+    this.memPages = 20;
+    let canvasSize = properties.width * properties.height;
+    let canvasDataLength = 4 * canvasSize;
+    let palleteOffset = 5 * canvasSize;
+    this.instance = new WebAssembly.Instance(new WebAssembly.Module(properties.module), {});
+    this.resizeMemory = (canvas, palette) => {
+      let memBytes = this.memPages * 64000;
+      memBytes -= (5*canvas + palette);
+      if (memBytes < 0) {
+        let extraPages = Math.ceil((-1*memBytes)/64000);
+        this.instance.exports.mem.grow(extraPages);
+        this.memPages += extraPages;
+      };
+    };
+    this.resizeMemory(canvasSize, this.palleteSize);
+    this.instanceData = new Uint8Array(this.instance.exports.mem.buffer);
+    this.instance.exports.setup(properties.width);
+    randomColor({
+      count: properties.numColours,
+    }).forEach(colour => {
+      this.instanceData.set([
+          parseInt("0x"+colour.slice(1,3)),
+          parseInt("0x"+colour.slice(3,5)),
+          parseInt("0x"+colour.slice(5,7))
+        ],
+        palleteOffset
+      )
+      palleteOffset += 3;
+    });
+    this.canvas = document.querySelector('canvas');
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+    this.context = this.canvas.getContext('2d');
+    this.imageData = this.context.createImageData(properties.width, properties.height);
+    this.canvasData = new Uint8Array(this.instance.exports.mem.buffer, canvasSize, canvasDataLength);
+    this.update = (mod) => {
+      this.instance.exports.update(this.width, this.height, mod);
+      this.imageData.data.set(this.canvasData);
+      this.context.putImageData(this.imageData, 0, 0);
+    };
+    this.update(properties.modulus);
+  }
+  update(mod) {
+    this.update(mod);
+  }
+}
 
-let instance = new WebAssembly.Instance(new WebAssembly.Module(data), {});
-let instanceData = new Uint8Array(instance.exports.mem.buffer);
-
-// setup colour palette
-const numColours = 100; // max = 64000
-let palleteIndex = 320000;
-randomColor({
-  count: numColours
-}).forEach(colour => {
-  instanceData.set([
-      parseInt("0x"+colour.slice(1,3)),
-      parseInt("0x"+colour.slice(3,5)),
-      parseInt("0x"+colour.slice(5,7))
-    ],
-    palleteIndex
-  )
-  palleteIndex += 3;
-});
-
-let canvas = document.querySelector('canvas');
-let context = canvas.getContext('2d');
-let imageData = context.createImageData(320, 200);
-let canvasData = new Uint8Array(instance.exports.mem.buffer, 64000, 256000);
-
-let modulus = 3;
-let update = (mod) => {
-  instance.exports.update(mod);
-  imageData.data.set(canvasData);
-  context.putImageData(imageData, 0, 0);
+let canvasProps = {
+  modulus: 3,
+  width: 1000,
+  height: 500,
+  module: new Uint8Array(sigma),
+  numColours: 500
 };
-update(modulus);
+let canvas = new Canvas(canvasProps);
 
 // ui controller
 const modInput = document.getElementById("mod-input");
@@ -43,36 +69,44 @@ const options = document.getElementById("option-panel");
 
 modInput.oninput = () => {
     let newMod = Number(modInput.value);
-    if (newMod && (newMod != modulus) && (newMod <= 5000)) {
-        modulus = newMod;
-        update(modulus);
-    };
+    if (newMod) {
+      if (newMod > 500)  {
+        canvasProps.modulus = 500;
+        modInput.value = 500;
+        canvas.update(canvasProps.modulus);
+      } else if (newMod < 2) {
+        canvasProps.modulus = 2;
+        modInput.value = 2;
+        canvas.update(canvasProps.modulus);
+      } else {
+        canvasProps.modulus = newMod;
+        canvas.update(canvasProps.modulus);
+      }
+    } else {
+      modInput.value = canvasProps.modulus;
+    }
 };
 
 modIncrement.addEventListener("click", () => {
-    if (modulus < 5000) {
-        modulus += 1;
-        modInput.value = modulus;
-        update(modulus);
+    if (canvasProps.modulus <= 500) {
+        canvasProps.modulus += 1;
+        modInput.value = canvasProps.modulus;
+        canvas.update(canvasProps.modulus);
     }
 });
 
 modDecrement.addEventListener("click", () => {
-    if (modulus > 2) {
-        modulus -= 1;
-        modInput.value = modulus;
-        update(modulus);
+    if (canvasProps.modulus > 2) {
+        canvasProps.modulus -= 1;
+        modInput.value = canvasProps.modulus;
+        canvas.update(canvasProps.modulus);
     }
 });
 
 let optHidden = false;
 optToggle.addEventListener("click", () => {
-    if (optHidden) {
-        optToggleImg.src = "assets/img/hide.png";
-    }
-    else {
-        optToggleImg.src = "assets/img/show.png";
-    }
+    if (optHidden) optToggleImg.src = "assets/img/hide.png";
+    else optToggleImg.src = "assets/img/show.png";
     options.classList.toggle("hidden");
     optHidden = !optHidden;
 });
