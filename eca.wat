@@ -93,4 +93,26 @@
     )
   )
 
+  ;; update state of dynamical system
+  (func $updateSystem
+    (param $x0 i32) (param $x1 i32) (param $x2 i32) (param $x3 i32)
+    (param $x4 i32) (param $x5 i32) (param $x6 i32) (param $x7 i32)
+    (param $canvasWidth i32) (param $canvasHeight i32)
+
+    (local $rowAddress i32)
+    (local $loopBound i32)
+    (set_local $loopBound (i32.sub (local.get $canvasHeight) (i32.const 1)))
+
+    (loop
+      (set_local $rowAddress (i32.add (local.get $rowAddress) (i32.const 1)))
+      (call $updateRow
+        (local.get $x0) (local.get $x1) (local.get $x2) (local.get $x3)
+        (local.get $x4) (local.get $x5) (local.get $x6) (local.get $x7)
+        (local.get $canvasWidth) (local.get $rowAddress))
+      (br_if 0
+        (i32.lt_u (local.get $rowAddress) (local.get $loopBound))
+      )
+    )
+  )
+
 )
