@@ -37,6 +37,67 @@
     (i32.sub (local.get $maxIter) (local.get $i))
   )
 
+  (func $setPixel (param $case i32) (param $address i32) (param $c f64)
+    (local $r i32)
+    (local $g i32)
+    (local $b i32)
+    (local $a i32)
+
+    ;; fixed opacity
+    (set_local $a (i32.const 255))
+
+    ;; set rgb values
+    (if
+      (i32.eq (local.get $case) (i32.const 1))
+      (then
+        (set_local $r
+          (i32.trunc_f64_u (f64.mul
+            (f64.const 255)
+            (local.get $c))))
+      )
+      (else
+        (if
+          (i32.eq (local.get $case) (i32.const 2))
+          (then
+            (set_local $r (i32.const 255))
+            (set_local $g
+              (i32.trunc_f64_u (f64.mul
+                (f64.const 255)
+                (f64.sub (local.get $c) (f64.const 1)))))
+          )
+          (else
+            (if
+              (i32.eq (local.get $case) (i32.const 3))
+              (then
+                (set_local $r (i32.const 255))
+                (set_local $g (i32.const 255))
+                (set_local $b
+                  (i32.trunc_f64_u (f64.mul
+                    (f64.const 255)
+                    (f64.sub (local.get $c) (f64.const 2)))))
+              )
+            )
+          )
+        )
+      )
+    )
+
+    ;; store rgba at memory[address]
+    (i32.store8
+      (local.get $address)
+      (local.get $r))
+    (i32.store8
+      (i32.add (local.get $address) (i32.const 1))
+      (local.get $g))
+    (i32.store8
+      (i32.add (local.get $address) (i32.const 2))
+      (local.get $b))
+    (i32.store8
+      (i32.add (local.get $address) (i32.const 3))
+      (local.get $a))
+
+  )
+
   (func (export "update") (param $xmin f64) (param $xmax f64) (param $ymin f64) (param $ymax f64)
                           (param $width f64) (param $height f64) (param $iterations i32)
 
