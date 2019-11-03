@@ -37,4 +37,105 @@
     (i32.sub (local.get $maxIter) (local.get $i))
   )
 
+  (func (export "update") (param $xmin f64) (param $xmax f64) (param $ymin f64) (param $ymax f64)
+                          (param $width f64) (param $height f64) (param $iterations i32)
+
+    (local $i i32)
+    (local $ix f64)
+    (local $iy f64)
+    (local $x f64)
+    (local $y f64)
+    (local $c f64)
+    (local $pixel i32) ;; address to write colour data
+    (local $w f64) ;; width - 1
+    (local $h f64) ;; height - 1
+    (local $r f64) ;; xmax - xmin
+    (local $t f64) ;; ymax - ymin
+    (local $s i32) ;; iterations - 1
+
+    (set_local $w (f64.sub (local.get $width) (f64.const 1)))
+    (set_local $h (f64.sub (local.get $height) (f64.const 1)))
+    (set_local $r (f64.sub (local.get $xmax) (local.get $xmin)))
+    (set_local $t (f64.sub (local.get $ymax) (local.get $ymin)))
+    (set_local $s (i32.sub (local.get $iterations) (i32.const 1)))
+
+    (loop
+      ;; ++ix
+      (set_local $ix (f64.add (local.get $ix) (f64.const 1)))
+
+      (loop
+        (set_local $iy (f64.add (local.get $iy) (f64.const 1)))
+
+        (set_local $x (f64.add
+          (local.get $xmin)
+          (f64.div
+            (f64.mul (local.get $r) (local.get $ix))
+            (local.get $w))))
+
+        (set_local $y (f64.add
+          (local.get $ymin)
+          (f64.div
+            (f64.mul (local.get $t) (local.get $iy))
+            (local.get $h))))
+
+        (set_local $i (call $iter
+          (local.get $x) (local.get $y) (local.get $iterations)))
+
+        (set_local $pixel
+          (i32.mul
+            (i32.const 4)
+            (i32.trunc_f64_u (f64.add
+              (local.get $ix)
+              (f64.mul (local.get $width) (local.get $iy))))))
+
+        (if
+          (i32.gt_u (local.get $i) (local.get $iterations))
+          (then
+            ;; colour black
+            (call $setPixel
+              (i32.const 0) (local.get $pixel) (local.get $c))
+          )
+          (else
+            (set_local $c (f64.mul
+              (f64.const 3) (f64.div
+                (call $log (local.get $i))
+                (call $log (local.get $s)))))
+            (if
+              (f64.lt (local.get $c) (f64.const 1))
+              (then
+                (call $setPixel
+                  (i32.const 1) (local.get $pixel) (local.get $c))
+              )
+              (else
+                (if
+                  (f64.lt (local.get $c) (f64.const 2))
+                  (then
+                    (call $setPixel
+                      (i32.const 2) (local.get $pixel) (local.get $c))
+                  )
+                  (else
+                    (call $setPixel
+                      (i32.const 3) (local.get $pixel) (local.get $c))
+                  )
+                )
+              )
+            )
+          )
+        )
+
+        ;; loop while 0 <= ++iy < height
+        (br_if 0
+          (f64.lt (local.get $iy) (local.get $height)))
+
+      )
+
+      (set_local $iy (f64.const 0))
+
+      ;; loop while 0 <= ++ix < width
+      (br_if 0
+        (f64.lt (local.get $ix) (local.get $width)))
+
+    )
+  )
+
 )
