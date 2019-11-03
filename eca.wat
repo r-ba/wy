@@ -55,4 +55,42 @@
     (local.get $result)
   )
 
+  ;; update individual row in the system
+  (func $updateRow
+    (param $x0 i32) (param $x1 i32) (param $x2 i32) (param $x3 i32)
+    (param $x4 i32) (param $x5 i32) (param $x6 i32) (param $x7 i32)
+    (param $rowWidth i32) (param $rowAddress i32)
+
+    (local $i i32)
+    (local $rowIndex i32)
+    (local $prevRowIndex i32)
+    (local $loopBound i32)
+    (set_local $rowIndex (i32.mul (local.get $rowAddress) (local.get $rowWidth)))
+    (set_local $prevRowIndex (i32.sub (local.get $rowIndex) (local.get $rowWidth)))
+    (set_local $loopBound (i32.sub (local.get $rowWidth) (i32.const 2)))
+
+    (loop
+      ;; mem[rowIndex] = rule(mem[prevRowIndex-1],mem[prevRowIndex],mem[prevRowIndex+1])
+      (i32.store8
+        (i32.add (local.get $rowIndex) (i32.const 1))
+        (call $automataMap
+          (local.get $x0) (local.get $x1) (local.get $x2) (local.get $x3)
+          (local.get $x4) (local.get $x5) (local.get $x6) (local.get $x7)
+          (i32.load8_u (local.get $prevRowIndex))
+          (i32.load8_u (i32.add (local.get $prevRowIndex) (i32.const 1)))
+          (i32.load8_u (i32.add (local.get $prevRowIndex) (i32.const 2)))
+        )
+      )
+
+      ;; increment indices
+      (set_local $i (i32.add (local.get $i) (i32.const 1)))
+      (set_local $rowIndex (i32.add (local.get $rowIndex) (i32.const 1)))
+      (set_local $prevRowIndex (i32.add (local.get $prevRowIndex) (i32.const 1)))
+
+      ;; loop if i < $rowWidth-2
+      (br_if 0
+        (i32.lt_u (local.get $i) (local.get $loopBound)))
+    )
+  )
+
 )
