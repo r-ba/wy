@@ -166,4 +166,16 @@
     )
   )
 
+  (func $bin (param $n i32) (param $power i32) (result i32)
+    (if (result i32)
+      (i32.le_u (local.get $power) (local.get $n))
+      (then
+        (i32.sub (local.get $n) (local.get $power))
+      )
+      (else
+        (local.get $n)
+      )
+    )
+  )
+
 )
