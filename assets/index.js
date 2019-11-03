@@ -1,112 +1,116 @@
-class Canvas {
-  constructor(properties) {
-    this.width = properties.width;
-    this.height = properties.height;
-    this.palleteSize = properties.numColours;
-    this.memPages = 20;
-    let canvasSize = properties.width * properties.height;
-    let canvasDataLength = 4 * canvasSize;
-    let palleteOffset = 5 * canvasSize;
-    this.instance = new WebAssembly.Instance(new WebAssembly.Module(properties.module), {});
-    this.resizeMemory = (canvas, palette) => {
-      let memBytes = this.memPages * 64000;
-      memBytes -= (5*canvas + palette);
-      if (memBytes < 0) {
-        let extraPages = Math.ceil((-1*memBytes)/64000);
-        this.instance.exports.mem.grow(extraPages);
-        this.memPages += extraPages;
-      };
-    };
-    this.resizeMemory(canvasSize, this.palleteSize);
-    this.instanceData = new Uint8Array(this.instance.exports.mem.buffer);
-    this.instance.exports.setup(properties.width);
-    randomColor({
-      count: properties.numColours,
-    }).forEach(colour => {
-      this.instanceData.set([
-          parseInt("0x"+colour.slice(1,3)),
-          parseInt("0x"+colour.slice(3,5)),
-          parseInt("0x"+colour.slice(5,7))
-        ],
-        palleteOffset
-      )
-      palleteOffset += 3;
-    });
-    this.canvas = document.querySelector('canvas');
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    this.context = this.canvas.getContext('2d');
-    this.imageData = this.context.createImageData(properties.width, properties.height);
-    this.canvasData = new Uint8Array(this.instance.exports.mem.buffer, canvasSize, canvasDataLength);
-    this.update = (mod) => {
-      this.instance.exports.update(this.width, this.height, mod);
-      this.imageData.data.set(this.canvasData);
-      this.context.putImageData(this.imageData, 0, 0);
-    };
-    this.update(properties.modulus);
-  }
-  update(mod) {
-    this.update(mod);
-  }
-}
+const width = 1000;
+const height = 500;
+const canvasSize = width * height;
+const canvasDataLength = 4 * canvasSize;
+const palleteOffset = 5 * canvasSize;
 
-let canvasProps = {
-  modulus: 3,
-  width: 1000,
-  height: 500,
-  module: new Uint8Array(sigma),
-  numColours: 500
+let instance;
+let instanceData;
+let canvasData;
+let memPages = 20;
+
+let canvas = document.querySelector('canvas');
+canvas.width = width;
+canvas.height = height;
+let context = canvas.getContext('2d');
+let imageData = context.createImageData(width, height);
+
+let modifierLowerBound = 2;
+let modifierUpperBound = 255;
+let modifier = 30;
+let palleteSize = 0;
+
+const generatePalette = (numColours) => {
+  randomColor({
+    count: properties.numColours,
+  }).forEach(colour => {
+    this.instanceData.set([
+        parseInt("0x"+colour.slice(1,3)),
+        parseInt("0x"+colour.slice(3,5)),
+        parseInt("0x"+colour.slice(5,7))
+      ],
+      palleteOffset
+    )
+    palleteOffset += 3;
+  });
 };
-let canvas = new Canvas(canvasProps);
+
+const resizeMemory = (canvas, palette) => {
+  let memBytes = memPages * 64000;
+  memBytes -= (5*canvas + palette);
+  if (memBytes < 0) {
+    let extraPages = Math.ceil((-1*memBytes)/64000);
+    instance.exports.mem.grow(extraPages);
+    memPages += extraPages;
+  };
+};
+
+const update = (n) => {
+  instance.exports.update(width, height, n);
+  imageData.data.set(canvasData);
+  context.putImageData(imageData, 0, 0);
+};
+
+const init = (moduleName) => {
+  WebAssembly.instantiateStreaming(fetch(`wasm/${moduleName}.wasm`), {}).then(obj => {
+    instance = obj.instance;
+    resizeMemory(canvasSize, palleteSize);
+    instanceData = new Uint8Array(obj.instance.exports.mem.buffer);
+    obj.instance.exports.setup(width);
+    canvasData = new Uint8Array(obj.instance.exports.mem.buffer, canvasSize, canvasDataLength);
+    update(modifier);
+  });
+};
+init("eca");
 
 // ui controller
-const modInput = document.getElementById("mod-input");
-const modIncrement = document.getElementById("mod-increment");
-const modDecrement = document.getElementById("mod-decrement");
+const modifierInput = document.getElementById("mod-input");
+const modifierIncrement = document.getElementById("mod-increment");
+const modifierDecrement = document.getElementById("mod-decrement");
 const optToggle = document.getElementById("option-toggle");
 const optToggleImg = document.getElementById("option-toggle-img");
 const options = document.getElementById("option-panel");
 
-modInput.oninput = () => {
-    let newMod = Number(modInput.value);
+modifierInput.oninput = () => {
+    let newMod = Number(modifierInput.value);
     if (newMod) {
-      if (newMod > 500)  {
-        canvasProps.modulus = 500;
-        modInput.value = 500;
-        canvas.update(canvasProps.modulus);
-      } else if (newMod < 2) {
-        canvasProps.modulus = 2;
-        modInput.value = 2;
-        canvas.update(canvasProps.modulus);
+      if (newMod > modifierUpperBound)  {
+        modifier = modifierUpperBound;
+        modifierInput.value = modifierUpperBound;
+        update(modifier);
+      } else if (newMod < modifierLowerBound) {
+        modifier = modifierLowerBound;
+        modifierInput.value = modifierLowerBound;
+        update(modifier);
       } else {
-        canvasProps.modulus = newMod;
-        canvas.update(canvasProps.modulus);
+        modifier = newMod;
+        update(modifier);
       }
     } else {
-      modInput.value = canvasProps.modulus;
+      modifierInput.value = modifier;
     }
 };
 
-modIncrement.addEventListener("click", () => {
-    if (canvasProps.modulus <= 500) {
-        canvasProps.modulus += 1;
-        modInput.value = canvasProps.modulus;
-        canvas.update(canvasProps.modulus);
+modifierIncrement.addEventListener("click", () => {
+    if (modifier <= modifierUpperBound) {
+        modifier += 1;
+        modifierInput.value = modifier;
+        update(modifier);
     }
 });
 
-modDecrement.addEventListener("click", () => {
-    if (canvasProps.modulus > 2) {
-        canvasProps.modulus -= 1;
-        modInput.value = canvasProps.modulus;
-        canvas.update(canvasProps.modulus);
+modifierDecrement.addEventListener("click", () => {
+    if (modifier > modifierLowerBound) {
+        modifier -= 1;
+        modifierInput.value = modifier;
+        update(modifier);
     }
 });
 
 let optHidden = false;
 optToggle.addEventListener("click", () => {
-    if (optHidden) optToggleImg.src = "assets/img/hide.png";
-    else optToggleImg.src = "assets/img/show.png";
+    if (optHidden) optToggleImg.src = "img/hide.png";
+    else optToggleImg.src = "img/show.png";
     options.classList.toggle("hidden");
     optHidden = !optHidden;
 });
