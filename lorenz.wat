@@ -105,4 +105,41 @@
   ;; run setup at start
   (start $setup)
 
+  (func (export "update") (param $frame f64)
+    (local $i i32)
+    (local $j i32)
+    (local $max_iterations i32)
+    (local $theta f64)
+    (local $sine f64)
+    (local $cosine f64)
+    (local $x f64)
+    (local $y f64)
+
+    (set_local $max_iterations (i32.const 20000))
+    (set_local $theta (f64.mul (f64.const 0.015) (local.get $frame)))
+    (set_local $sine (call $sin (local.get $theta)))
+    (set_local $cosine (call $cos (local.get $theta)))
+
+    (call $reset)
+
+    (loop
+      (set_local $x (f64.add
+        (f64.mul
+          (call $load (local.get $i) (i32.const 0))
+          (local.get $cosine))
+        (f64.mul
+          (call $load (local.get $i) (i32.const 2))
+          (local.get $sine))))
+      (set_local $y (call $load (local.get $i) (i32.const 1)))
+
+      (call $push (local.get $x) (local.get $y))
+
+      (set_local $i (i32.add (local.get $i) (i32.const 3)))
+      (set_local $j (i32.add (local.get $j) (i32.const 2)))
+
+      ;; loop if i < max_iterations
+      (br_if 0
+        (i32.lt_u (local.get $i) (local.get $max_iterations)))
+    )
+  )
 )
